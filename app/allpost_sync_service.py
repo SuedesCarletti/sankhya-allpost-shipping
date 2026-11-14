@@ -95,7 +95,7 @@ class BufferProdutos:
                 **self.stats
             }
 
-# Instância global do buffer
+# Instncia global do buffer
 buffer_global = BufferProdutos()
 
 # ==================== CONSULTA SANKHYA (CORRIGIDO COM VIEW) ====================
@@ -225,7 +225,7 @@ def enviar_para_allpost(produtos_dados: List[Dict]) -> Dict:
         logger.error(f"Erro ao enviar para AllPost: {e}", exc_info=True)
         return {'sucesso': False, 'erro': str(e)}
 
-# ==================== WORKER DO BUFFER (CORRIGIDO) ====================
+# ==================== WORKER DO BUFFER ====================
 def worker_processar_buffer():
     """Worker que roda em background processando o buffer periodicamente"""
     logger.info("Worker do buffer de sincronização iniciado")

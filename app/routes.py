@@ -1,3 +1,4 @@
+import hmac
 import os
 import logging
 import requests
@@ -99,8 +100,12 @@ def basic_auth_required(f):
                 "retorno": "Credenciais de autenticação não fornecidas"
             }), 401
         
-        if (auth.username != ALLPOST_WEBHOOK_USERNAME or 
-            auth.password != ALLPOST_WEBHOOK_PASSWORD):
+        if not ALLPOST_WEBHOOK_USERNAME or not ALLPOST_WEBHOOK_PASSWORD:
+            logger.error("Credenciais do webhook não configuradas: acesso negado")
+            return jsonify({"retorno": "Credenciais inválidas"}), 401
+
+        if not (hmac.compare_digest(auth.username or '', ALLPOST_WEBHOOK_USERNAME) and
+                hmac.compare_digest(auth.password or '', ALLPOST_WEBHOOK_PASSWORD)):
             return jsonify({
                 "retorno": "Credenciais inválidas"
             }), 401
@@ -319,7 +324,7 @@ def get_new_bearer_token():
 
         # Log detalhado do token
         logger.info("Novo Bearer Token obtido com sucesso")
-        logger.info(f"Token (parcial): {bearer_token[:10]}...{bearer_token[-10:] if bearer_token else 'N/A'}")
+        logger.info(f"Token obtido: {'sim' if bearer_token else 'não'}")
 
         # Define tempo de expiração (4 horas a partir de agora)
         token_expiration_time = datetime.now() + timedelta(hours=4)
@@ -974,7 +979,7 @@ def consultar_notas_fiscais_manual():
             for nunota, nota in notas_agrupadas.items():
                 try:
                     start_time = time.time()
-                    # Passa o parâmetro enviar_api
+                    # Passa o parmetro enviar_api
                     payload = processar_nota_fiscal(nota, enviar_api=enviar_api)
                     processing_time = time.time() - start_time
 
@@ -1144,7 +1149,7 @@ def consultar_detalhe_cotacao(id_cotacao, delay_segundos=60):
         }
         
         logger.info(f"Consultando detalhes da cotação em: {get_url}")
-        logger.info(f"Usando token: {token_cotacao[:10]}...{token_cotacao[-10:] if token_cotacao else 'N/A'}")
+        logger.info(f"Usando token de cotação: {'sim' if token_cotacao else 'não'}")
         
         get_resp = requests.get(get_url, headers=get_headers, timeout=30)
         
@@ -1378,9 +1383,9 @@ from threading import Lock
 cotacao_lock = Lock()
       
 def consultar_pedidos_para_cotacao(limite=50, offset=0, max_retries=3):
-    # Exclusão mútua para evitar execuções simultâneas
+    # Exclusão mútua para evitar execuções simultneas
     if not cotacao_lock.acquire(blocking=False):
-        logger.warning("[COT] Consulta de cotações já em andamento! Abortando execução simultânea.")
+        logger.warning("[COT] Consulta de cotações já em andamento! Abortando execução simultnea.")
         return {
             "erro": "Consulta de cotações já em andamento. Aguarde o término antes de iniciar outra."
         }
@@ -1466,7 +1471,7 @@ def consultar_pedidos_para_cotacao(limite=50, offset=0, max_retries=3):
             try:
                 logger.info(f"[COT] Enviando cotação pedido {nunota}")
                 
-                # ========== NOVO: Consultar CODLOCAL (CORREÇÃO DE AUTENTICAÇÃO) ==========
+                # === Consultar CODLOCAL (CORREÇÃO DE AUTENTICAÇÃO) ==========
                 try:
                     # FIX 1: Pass the authenticated session object
                     codlocal_produtos = consultar_codlocal_produtos(pedido, sankhya_session=sankhya_session)
@@ -1543,7 +1548,7 @@ def consultar_pedidos_para_cotacao(limite=50, offset=0, max_retries=3):
                                 # Check the status of the update function
                                 if atualizado and atualizado.get('status') == 'sucesso':
                                     logger.info(
-                                        f"[COT] ✅ TGFCAB atualizado {nunota} "
+                                        f"[COT] TGFCAB atualizado {nunota} "
                                         f"(CODPARC:{transportadora_info['CODPARC']} | "
                                         f"ID AllPost:{id_transportadora_allpost} | "
                                         f"Frete:{valor_frete})"
@@ -1643,7 +1648,7 @@ def status_polling():
 @sankhya_routes.route('/config', methods=['GET', 'POST'])
 def configuracao():
     """
-    Rota para configurar parâmetros da API
+    Rota para configurar parmetros da API
     """
     global rate_limit_per_minute
     
